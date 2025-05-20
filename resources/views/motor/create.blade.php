@@ -21,10 +21,9 @@
                             <div class="col">
                                 <div class="form-group">
                                     <label>Model</label>
-                                   <select id="modelSelect" name="model_id" class="form-control" >
-    <option value="">Pilih Model</option>
-</select>
-
+                                    <select id="modelSelect" name="model_id" class="form-control" required>
+                                        <option value="">Pilih Model</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="col">
@@ -117,10 +116,9 @@
                             <div class="col">
                                 <div class="form-group">
                                     <label class="mb-medium">Kota</label>
-                                  <select id="citySelect" name="city_id" class="form-control" disabled>
-    <option value="">Pilih Kota</option>
-</select>
-
+                                    <select id="citySelect" name="city_id" class="form-control">
+                                        <option value="">Pilih Kota</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -195,6 +193,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 48px">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                 </svg>
+                                <p>Click or drag images here to upload</p>
                             </div>
                             <input id="carFormImageUpload" name="images[]" type="file" multiple accept="image/*" />
                         </div>
@@ -222,6 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const citySelect = document.getElementById('citySelect');
     const fileInput = document.getElementById('carFormImageUpload');
     const imagePreviews = document.getElementById('imagePreviews');
+    const uploadArea = document.querySelector('.form-image-upload');
 
     // --- Brand (Maker) → Model ---
     makerSelect.addEventListener('change', async function() {
@@ -279,4 +279,115 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // --- Preview Gambar ---
+    fileInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+
+    // Handle drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#666';
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.style.borderColor = '#ccc';
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#ccc';
+        fileInput.files = e.dataTransfer.files;
+        handleFiles(fileInput.files);
+    });
+
+    function handleFiles(files) {
+        imagePreviews.innerHTML = '';
+        
+        Array.from(files).forEach(file => {
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload only image files');
+                return;
+            }
+            
+            const reader = new FileReader();
+            const preview = document.createElement('div');
+            preview.className = 'car-form-image-preview';
+            
+            reader.onload = function(e) {
+                preview.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview">
+                    <button type="button" class="remove-image" aria-label="Remove image">×</button>
+                `;
+                
+                preview.querySelector('.remove-image').addEventListener('click', function() {
+                    preview.remove();
+                    updateFileList(file);
+                });
+            };
+            
+            reader.readAsDataURL(file);
+            imagePreviews.appendChild(preview);
+        });
+    }
+
+    function updateFileList(fileToRemove) {
+        const dt = new DataTransfer();
+        const files = fileInput.files;
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (file !== fileToRemove) {
+                dt.items.add(file);
+            }
+        }
+        
+        fileInput.files = dt.files;
+    }
+});
+</script>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const makerSelect = document.getElementById('makerSelect');
+    const modelSelect = document.getElementById('modelSelect');
+    const stateSelect = document.getElementById('stateSelect');
+    const citySelect = document.getElementById('citySelect');
+
+    // Brand -> Model relationship
+    makerSelect.addEventListener('change', async function() {
+        const makerId = this.value;
+        console.log('Selected maker ID:', makerId); // Debug logging
+        
+        modelSelect.innerHTML = '<option value="">Pilih Model</option>';
+        modelSelect.disabled = true;
+
+        if (!makerId) return;
+
+        try {
+            const response = await fetch(`/motors/maker/${makerId}/models`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const models = await response.json();
+            console.log('Received models:', models); // Debug logging
+            
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.name;
+                modelSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            modelSelect.innerHTML = '<option value="">Error loading models</option>';
+        } finally {
+            modelSelect.disabled = false;
+        }
+    });
+});
+</script>
+@endpush
 

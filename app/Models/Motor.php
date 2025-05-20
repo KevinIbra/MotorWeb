@@ -17,18 +17,18 @@ class Motor extends Model
 
     protected $table = 'motor'; 
     protected $fillable = [
-        'year',
-        'price',
+        'user_id',
         'maker_id',
         'model_id',
-        'city_id',
-        'motor_type_id',
-        'fuel_type_id',
+        'year',
+        'price',
         'vin',
         'mileage',
-        'user_id',
+        'motor_type_id',
+        'fuel_type_id',
+        'city_id',
         'address',
-        'phone',
+        'phone_number',  // Changed from 'phone' to 'phone_number'
         'description',
         'published_at'
     ];
@@ -89,6 +89,17 @@ class Motor extends Model
     {
         return $this->belongsToMany(User::class, 'favourite_motors');
     }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(MotorFavorite::class);
+    }
+
+    public function isFavoritedBy(User $user)
+    {
+        return $this->favorites()->where('user_id', $user->id)->exists();
+    }
+
     public function getCreatedDate(): string
     {
         return (new Carbon($this->created_at))->format('d M Y');

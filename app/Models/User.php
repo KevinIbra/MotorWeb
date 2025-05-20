@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -19,13 +20,13 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = [
+
+     
+     protected $fillable = [
         'name',
         'email',
-        'phone',
-        'google_id',
-        'facebook_id',
         'password',
+        'role',
     ];
 
     /**
@@ -59,5 +60,31 @@ class User extends Authenticatable
     public function motors():HasMany
     {
         return $this->hasMany(Motor::class);
+    }
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isBuyer()
+    {
+        return $this->role === 'buyer';
+    }
+
+    /**
+     * Get the user's favorite motors.
+     */
+    public function favorites()
+    {
+        return $this->hasMany(MotorFavorite::class);
+    }
+
+    /**
+     * Get all motors that the user has favorited.
+     */
+    public function favoritedMotors()
+    {
+        return $this->belongsToMany(Motor::class, 'motor_favorites')
+            ->withTimestamps();
     }
 }

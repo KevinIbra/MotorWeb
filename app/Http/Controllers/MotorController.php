@@ -8,8 +8,12 @@ use App\Models\MotorModel;
 use App\Models\Maker;
 use App\Models\State;
 use App\Models\City;
+use App\Models\FuelType;
+use App\Models\MotorFavorite;
+use App\Models\MotorType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; 
 
 class MotorController extends Controller
 {
@@ -63,7 +67,65 @@ class MotorController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            // Validate the request
+            $validated = $request->validate([
+                'maker_id' => 'required|exists:makers,id',
+                'model_id' => 'required|string|max:255',
+                'year' => 'required|integer|min:1990|max:' . date('Y'),
+                'motor_type' => 'required|string',
+                'price' => 'required|numeric',
+                'vin_code' => 'required|string|max:255',
+                'kilometers' => 'required|numeric',
+                'fuel_type' => 'required|string',
+                'state_id' => 'required|exists:states,id',
+                'city_text' => 'required|string|max:255',
+                'address' => 'required|string',
+                'phone_number' => 'required|string',
+                'description' => 'required|string',
+                'images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048', // max 2MB per image
+            ]);
+
+            // Create new motor
+            $motor = new Motor();
+            $motor->user_id = Auth::id();
+            $motor->maker_id = $request->maker_id;
+            $motor->model_id = $request->model_text;
+            $motor->year = $request->year;
+            $motor->motor_type = $request->motor_type;
+            $motor->price = $request->price;
+            $motor->vin_code = $request->vin_code;
+            $motor->kilometers = $request->kilometers;
+            $motor->fuel_type = $request->fuel_type;
+            $motor->state_id = $request->state_id;
+            $motor->city_id = $request->city_id;
+            $motor->address = $request->address;
+            $motor->phone_number = $request->phone_number;
+            $motor->description = $request->description;
+            $motor->published = $request->has('published');
+            $motor->save();
+
+            // Handle image uploads
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $imageFile) {
+                    $path = $imageFile->store('motor-images', 'public');
+                    
+                    $motor->images()->create([
+                        'image_path' => $path,
+                        'is_primary' => $motor->images()->count() === 0 // First image is primary
+                    ]);
+                }
+            }
+
+            return redirect()->route('motor.index')
+                ->with('success', 'Motor berhasil ditambahkan!');
+
+        } catch (\Exception $e) {
+            Log::error('Failed to store motor: ' . $e->getMessage());
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Gagal menambahkan motor. Silakan coba lagi.']);
+        }
     }
 
     /**
@@ -71,9 +133,17 @@ class MotorController extends Controller
      */
     public function show(Request $request, Motor $motor)
     {
-       
-
-        $motor->load(['maker', 'motorModel', 'city', 'motorType', 'fuelType', 'primaryImage', 'images']);
+        $motor->load([
+            'maker', 
+            'motorModel', 
+            'city', 
+            'motorType', 
+            'fuelType', 
+            'primaryImage', 
+            'images',
+            'features'
+        ]);
+        
         return view('motor.show', ['motor' => $motor]);
     }
 
@@ -101,21 +171,69 @@ class MotorController extends Controller
         //
     }
 
-    public function search()
+    public function search(Request $request)
     {
-        $query = Motor::where('published_at', '<', now())
-        ->with(['primaryImage', 'city', 'motorType', 'fuelType', 'maker', 'motorModel'])
-        ->orderBy('published_at', 'desc');
+        $query = Motor::query()
+            ->with(['primaryImage', 'maker', 'motorModel', 'motorType', 'fuelType'])
+            ->where('published_at', '<', now());
 
-        $motors = $query->paginate(15);
+        // Apply filters
+        if ($request->filled('maker_id')) {
+            $query->where('maker_id', $request->maker_id);
+        }
 
-        // $motorCount = $query->count();
+        if ($request->filled('model_id')) {
+            $query->where('model_id', $request->model_id);
+        }
 
-        // $motors = $query->limit(30)->get();
+        if ($request->filled('motor_type_id')) {
+            $query->where('motor_type_id', $request->motor_type_id);
+        }
 
-        // dd($motors [0]);
+        if ($request->filled('year_from')) {
+            $query->where('year', '>=', $request->year_from);
+        }
 
-        return view('motor.search', ['motors'=> $motors]);
+        if ($request->filled('year_to')) {
+            $query->where('year', '<=', $request->year_to);
+        }
+
+        if ($request->filled('price_from')) {
+            $query->where('price', '>=', $request->price_from);
+        }
+
+        if ($request->filled('price_to')) {
+            $query->where('price', '<=', $request->price_to);
+        }
+
+        if ($request->filled('mileage')) {
+            $query->where('mileage', '<=', $request->mileage);
+        }
+
+        if ($request->filled('fuel_type_id')) {
+            $query->where('fuel_type_id', $request->fuel_type_id);
+        }
+
+        // Apply sorting
+        switch ($request->get('sort')) {
+            case 'price':
+                $query->orderBy('price', 'desc');
+                break;
+            case '-price':
+                $query->orderBy('price', 'asc');
+                break;
+            default:
+                $query->latest('published_at');
+        }
+
+        $motors = $query->paginate(12)->withQueryString();
+
+        return view('motor.search', [
+            'motors' => $motors,
+            'makers' => Maker::orderBy('name')->get(),
+            'motorTypes' => MotorType::orderBy('name')->get(),
+            'fuelTypes' => FuelType::orderBy('name')->get(),
+        ]);
     }
 
     public function myList()
@@ -130,7 +248,12 @@ class MotorController extends Controller
 
     public function favorites()
     {
-        return view('motor.favourites');
+        $favoriteMotors = auth()->user()->favoritedMotors()
+            ->with(['maker', 'motorModel', 'primaryImage'])
+            ->latest()
+            ->paginate(12);
+
+        return view('motor.favorites', compact('favoriteMotors'));
     }
 
     public function watchlist()
@@ -146,8 +269,10 @@ class MotorController extends Controller
 
 public function getModels($makerId)
 {
-    $models = MotorModel::where('maker_id', $makerId)->get();
-
+    $models = MotorModel::where('maker_id', $makerId)
+        ->orderBy('name')
+        ->get(['id', 'name']);
+    
     return response()->json($models);
 }
 
@@ -155,14 +280,33 @@ public function getModelsByMaker($makerId)
 {
     try {
         $models = MotorModel::where('maker_id', $makerId)
-                           ->select('id', 'name')
                            ->orderBy('name')
-                           ->get();
+                           ->get(['id', 'name']);
         
         return response()->json($models);
     } catch (\Exception $e) {
-        return response()->json(['error' => 'Failed to fetch models'], 500);
+        Log::error('Error fetching models: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to load models'], 500);
     }
+}
+
+public function toggleFavorite(Motor $motor)
+{
+    $user = auth()->user();
+    $favorite = MotorFavorite::where('user_id', $user->id)
+        ->where('motor_id', $motor->id)
+        ->first();
+
+    if ($favorite) {
+        $favorite->delete();
+    } else {
+        MotorFavorite::create([
+            'user_id' => $user->id,
+            'motor_id' => $motor->id
+        ]);
+    }
+
+    return back();
 }
 
 }

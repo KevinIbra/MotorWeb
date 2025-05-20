@@ -23,6 +23,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        {
+    $this->call([
+        AdminSeeder::class,
+        // ...existing seeders...
+    ]);
+}
         // tipe motor
         // [
         //     'Trail',
@@ -129,6 +135,10 @@ class DatabaseSeeder extends Seeder
                 'favouriteMotors'
             )
             ->create();
+
+            
     }
+
+    
 }
 

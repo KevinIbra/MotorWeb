@@ -16,6 +16,7 @@ class MotorImage extends Model
     protected $fillable = [
         'motor_id',
         'image_path',
+        'is_primary',
     ];
 
     public function motor(): BelongsTo

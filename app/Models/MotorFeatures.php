@@ -26,6 +26,18 @@ class MotorFeatures extends Model
         'traction_control'
     ];
 
+    protected $casts = [
+        'abs' => 'boolean',
+        'keyless' => 'boolean',
+        'alarm_system' => 'boolean',
+        'led_lights' => 'boolean',
+        'digital_speedometer' => 'boolean',
+        'bluetooth_connectivity' => 'boolean',
+        'usb_charging' => 'boolean',
+        'engine_kill_switch' => 'boolean',
+        'side_stand_sensor' => 'boolean',
+        'traction_control' => 'boolean'
+    ];
 
     public function motor(): BelongsTo
     {

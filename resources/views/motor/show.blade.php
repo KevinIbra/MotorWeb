@@ -80,34 +80,34 @@
                 <h2 class="car-details-title">Spesifikasi Motor</h2>
   
                 <ul class="car-specifications">
-                  <x-motor-spesification :value="$motor->features->keyless">
+                 <x-motor-spesification :value="optional($motor->features)->abs">
+                    ABS
+                  </x-motor-spesification>
+                  <x-motor-spesification :value="optional($motor->features)->keyless">
                     Keyless
                   </x-motor-spesification>
-                  <x-motor-spesification :value="$motor->features->alarm_system">
+                  <x-motor-spesification :value="optional($motor->features)->alarm_system">
                   Alarm System
                   </x-motor-spesification>
-                  <x-motor-spesification :value="$motor->features->led_lights">
-                  Led Lights
+                  <x-motor-spesification :value="optional($motor->features)->led_lights">
+                  LED Lights
                   </x-motor-spesification>
-                  <x-motor-spesification :value="$motor->features->abs">
-                  ABS
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="$motor->features->digital_speedometer">
+                  <x-motor-spesification :value="optional($motor->features)->digital_speedometer">
                  Digital Speedometer
                   </x-motor-spesification>
-                  <x-motor-spesification :value="$motor->features->bluetooth_connectivity">
+                  <x-motor-spesification :value="optional($motor->features)->bluetooth_connectivity">
                   Bluetooth Connectivity
                   </x-motor-spesification>
-                  <x-motor-spesification :value="$motor->features->usb_charging">
+                  <x-motor-spesification :value="optional($motor->features)->usb_charging">
                  USB Charging
                   </x-motor-spesification>
-                  <x-motor-spesification :value="$motor->features->engine_kill_switch">
+                  <x-motor-spesification :value="optional($motor->features)->engine_kill_switch">
                   Engine Kill Switch
                   </x-motor-spesification>
-                  <x-motor-spesification :value="$motor->features->side_stand_sensor">
+                  <x-motor-spesification :value="optional($motor->features)->side_stand_sensor">
                   Side Stand Sensor
                   </x-motor-spesification>
-                  <x-motor-spesification :value="$motor->features->traction_control">
+                  <x-motor-spesification :value="optional($motor->features)->traction_control">
                  Traction Control
                   </x-motor-spesification>
                   
@@ -118,25 +118,31 @@
             </div>
             <div class="car-details card">
               <div class="flex items-center justify-between">
-                <p class="car-details-price">Rp.{{ $motor->price }}</p>
-                <button class="btn-heart">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    style="width: 20px"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                    />
-                  </svg>
-                </button>
-              </div>
-  
+                <p class="car-details-price">Rp.{{ number_format($motor->price, 0, ',', '.') }}</p>
+                @auth
+                    <form action="{{ route('motor.toggleFavorite', $motor) }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="btn-heart {{ $motor->isFavoritedBy(auth()->user()) ? 'active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" 
+                                 fill="{{ $motor->isFavoritedBy(auth()->user()) ? 'currentColor' : 'none' }}"
+                                 viewBox="0 0 24 24" 
+                                 stroke-width="1.5" 
+                                 stroke="currentColor" 
+                                 style="width: 20px">
+                                <path stroke-linecap="round" 
+                                      stroke-linejoin="round" 
+                                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                            </svg>
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="btn-heart">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                        </svg>
+                    </a>
+                @endauth
+            </div>
               <hr />
               <table class="car-details-table">
                 <tbody>

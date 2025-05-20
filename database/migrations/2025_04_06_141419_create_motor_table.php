@@ -13,21 +13,22 @@ return new class extends Migration
     {
         Schema::create('motor', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('maker_id')->constrained();
-            $table->foreignId('model_id')->constrained();
+            $table->foreignId('user_id')->constrained();
+            $table->foreignId('maker_id')->constrained('makers');
+            $table->foreignId('model_id')->constrained('motor_models');
             $table->year('year');
             $table->decimal('price', 12, 2);
-            $table->string('vin', 17);
-            $table->decimal('mileage', 10, 2)->nullable();
-            $table->foreignId('motor_type_id')->constrained();
-            $table->foreignId('fuel_type_id')->constrained();
-            $table->foreignId('user_id')->constrained();
-            $table->foreignId('city_id')->constrained();
-            $table->string('address');
-            $table->string('phone');
+            $table->string('vin')->nullable();
+            $table->integer('mileage');
+            $table->foreignId('motor_type_id')->constrained('motor_types');
+            $table->foreignId('fuel_type_id')->constrained('fuel_types');
+            $table->foreignId('city_id')->constrained('cities');
+            $table->text('address');
+            $table->string('phone_number', 20);
             $table->text('description');
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
+            // $table->softDeletes(); // This adds the deleted_at column
         });
     }
 

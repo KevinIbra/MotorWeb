@@ -13,8 +13,11 @@
                         {{ Auth::user()->name }}
                     </a>
                     <ul class="submenu">
-                        <li><a href="{{ route('motor.mylist') }}">MotorKU</a></li>
-                        <li><a href="{{ route('motor.favorites') }}">Motor Favorit</a></li>
+                        @if(auth()->user()->role === 'admin')
+                            <li><a href="{{ route('motor.mylist') }}">MotorKU</a></li>
+                        @else
+                            <li><a href="{{ route('motor.favorites') }}">Motor Favorit</a></li>
+                        @endif
                         <li>
                             <form method="POST" action="{{ route('logout') }}" class="logout-form">
                                 @csrf
@@ -24,12 +27,14 @@
                     </ul>
                 </div>
 
-                <a href="{{ route('motor.create') }}" class="btn btn-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 18px; margin-right: 4px">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    Jual Motor
-                </a>
+                @if(auth()->user()->role === 'admin')
+                    <a href="{{ route('motor.create') }}" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 18px; margin-right: 4px">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Tambah Motor
+                    </a>
+                @endif
             @else
                 <a href="{{ route('login') }}" class="btn btn-login">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 18px; margin-right: 4px">
