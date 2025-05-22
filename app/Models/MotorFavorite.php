@@ -1,13 +1,17 @@
 <?php
 
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class MotorFavorite extends Model
 {
-    protected $fillable = ['user_id', 'motor_id'];
+    protected $table = 'favorite_motor';
+    
+    protected $fillable = [
+        'user_id',
+        'motor_id'
+    ];
 
     public function user()
     {

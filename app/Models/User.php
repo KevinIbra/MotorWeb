@@ -13,7 +13,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;   
 
     /**
      * The attributes that are mass assignable.
@@ -26,7 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
+        'role'
     ];
 
     /**
@@ -40,51 +40,38 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
-    public function favouriteMotors(): BelongsToMany
-    {
-        return $this->belongsToMany(Motor::class, 'favourite_motors');
-    }
-
-    public function motors():HasMany
+    public function motors(): HasMany
     {
         return $this->hasMany(Motor::class);
     }
-    public function isAdmin()
+
+    public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
-    public function isBuyer()
+    public function isBuyer(): bool
     {
         return $this->role === 'buyer';
     }
 
     /**
-     * Get the user's favorite motors.
+     * Get all motors that the user has favorited
      */
-    public function favorites()
+    public function favouriteMotors(): BelongsToMany
     {
-        return $this->hasMany(MotorFavorite::class);
+        return $this->belongsToMany(Motor::class, 'favourite_motor')
+                    ->withTimestamps();
     }
 
-    /**
-     * Get all motors that the user has favorited.
-     */
-    public function favoritedMotors()
-    {
-        return $this->belongsToMany(Motor::class, 'motor_favorites')
-            ->withTimestamps();
-    }
+   
 }

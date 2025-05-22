@@ -14,6 +14,8 @@ use App\Models\MotorType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log; 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class MotorController extends Controller
 {
@@ -31,16 +33,11 @@ class MotorController extends Controller
      */
     public function index()
     {
-        // Check if user is authenticated first
-        if (!Auth::check()) {
-            return redirect()->route('login');
-        }
-
-        $motors = Motor::with(['maker', 'motorModel', 'primaryImage'])
+        $motors = Motor::with(['maker', 'motorModel', 'images'])
             ->where('user_id', Auth::id())
             ->latest()
-            ->paginate(10);
-            
+            ->paginate(10); // Changed from get() to paginate()
+
         return view('motor.index', compact('motors'));
     }
 
@@ -49,17 +46,12 @@ class MotorController extends Controller
      */
     public function create()
     {
-        $data = [
-            'makers' => Maker::orderBy('name')->get(),
-            'motorModels' => MotorModel::with('maker')
-                            ->select('id', 'maker_id', 'name')
-                            ->orderBy('name')
-                            ->get(),
-            'states' => State::orderBy('name')->get(),
-            'cities' => City::orderBy('name')->get()
-        ];
+        $makers = Maker::orderBy('name')->get();
+        $motorTypes = MotorType::orderBy('name')->get();
+        $fuelTypes = FuelType::orderBy('name')->get();
+        $cities = City::orderBy('name')->get();
 
-        return view('motor.create', $data);
+        return view('motor.create', compact('makers', 'motorTypes', 'fuelTypes', 'cities'));
     }
 
     /**
@@ -68,63 +60,70 @@ class MotorController extends Controller
     public function store(Request $request)
     {
         try {
-            // Validate the request
+            DB::beginTransaction();
+
             $validated = $request->validate([
                 'maker_id' => 'required|exists:makers,id',
-                'model_id' => 'required|string|max:255',
+                'model_id' => 'required|exists:motor_models,id',
                 'year' => 'required|integer|min:1990|max:' . date('Y'),
-                'motor_type' => 'required|string',
-                'price' => 'required|numeric',
-                'vin_code' => 'required|string|max:255',
-                'kilometers' => 'required|numeric',
-                'fuel_type' => 'required|string',
-                'state_id' => 'required|exists:states,id',
-                'city_text' => 'required|string|max:255',
+                'price' => 'required|numeric|min:0',
+                'vin' => 'nullable|string|max:255',
+                'mileage' => 'required|integer|min:0',
+                'motor_type_id' => 'required|exists:motor_types,id',
+                'fuel_type_id' => 'required|exists:fuel_types,id',
+                'city_id' => 'required|exists:cities,id',
                 'address' => 'required|string',
-                'phone_number' => 'required|string',
+                'phone_number' => 'required|string|max:20',
                 'description' => 'required|string',
-                'images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048', // max 2MB per image
+                'images' => 'required|array|min:1',
+                'images.*' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             ]);
 
-            // Create new motor
-            $motor = new Motor();
-            $motor->user_id = Auth::id();
-            $motor->maker_id = $request->maker_id;
-            $motor->model_id = $request->model_text;
-            $motor->year = $request->year;
-            $motor->motor_type = $request->motor_type;
-            $motor->price = $request->price;
-            $motor->vin_code = $request->vin_code;
-            $motor->kilometers = $request->kilometers;
-            $motor->fuel_type = $request->fuel_type;
-            $motor->state_id = $request->state_id;
-            $motor->city_id = $request->city_id;
-            $motor->address = $request->address;
-            $motor->phone_number = $request->phone_number;
-            $motor->description = $request->description;
-            $motor->published = $request->has('published');
-            $motor->save();
+            $motor = Motor::create([
+                'user_id' => Auth::id(),
+                'maker_id' => $validated['maker_id'],
+                'model_id' => $validated['model_id'],
+                'year' => $validated['year'],
+                'price' => $validated['price'],
+                'vin' => $validated['vin'],
+                'mileage' => $validated['mileage'],
+                'motor_type_id' => $validated['motor_type_id'],
+                'fuel_type_id' => $validated['fuel_type_id'],
+                'city_id' => $validated['city_id'],
+                'address' => $validated['address'],
+                'phone_number' => $validated['phone_number'],
+                'description' => $validated['description'],
+                'published_at' => now(),
+            ]);
 
-            // Handle image uploads
             if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $imageFile) {
-                    $path = $imageFile->store('motor-images', 'public');
+                foreach ($request->file('images') as $index => $imageFile) {
+                    // Store image in public storage
+                    $path = $imageFile->store('motors', 'public');
                     
-                    $motor->images()->create([
-                        'image_path' => $path,
-                        'is_primary' => $motor->images()->count() === 0 // First image is primary
+                    $image = $motor->images()->create([
+                        'path' => $path,
+                        'is_primary' => $index === 0 // First image is primary
                     ]);
+
+                    // Set first image as primary in motor table
+                    if ($index === 0) {
+                        $motor->update(['primary_image_id' => $image->id]);
+                    }
                 }
             }
 
-            return redirect()->route('motor.index')
-                ->with('success', 'Motor berhasil ditambahkan!');
+            DB::commit();
+            return redirect()->route('motor.index')->with('success', 'Motor berhasil ditambahkan!');
 
         } catch (\Exception $e) {
-            Log::error('Failed to store motor: ' . $e->getMessage());
+            DB::rollBack();
+            Log::error('Error creating motor: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
             return back()
                 ->withInput()
-                ->withErrors(['error' => 'Gagal menambahkan motor. Silakan coba lagi.']);
+                ->withErrors(['error' => 'Gagal menambahkan motor. Silakan coba lagi. ' . $e->getMessage()]);
         }
     }
 
@@ -152,7 +151,22 @@ class MotorController extends Controller
      */
     public function edit(Motor $motor)
     {
-        return view('motor.edit', ['motor' => $motor]);
+        $makers = Maker::orderBy('name')->get();
+        $models = MotorModel::where('maker_id', $motor->maker_id)
+            ->orderBy('name')
+            ->get();
+        $motorTypes = MotorType::orderBy('name')->get();
+        $fuelTypes = FuelType::orderBy('name')->get();
+        $cities = City::orderBy('name')->get();
+
+        return view('motor.edit', compact(
+            'motor',
+            'makers',
+            'models',
+            'motorTypes',
+            'fuelTypes',
+            'cities'
+        ));
     }
 
     /**
@@ -160,7 +174,59 @@ class MotorController extends Controller
      */
     public function update(Request $request, Motor $motor)
     {
-        //
+        try {
+            DB::beginTransaction();
+
+            $validated = $request->validate([
+                'maker_id' => 'required|exists:makers,id',
+                'model_id' => 'required|exists:motor_models,id',
+                'year' => 'required|integer|min:1990|max:' . date('Y'),
+                'price' => 'required|numeric|min:0',
+                'vin' => 'nullable|string|max:255',
+                'mileage' => 'required|integer|min:0',
+                'motor_type_id' => 'required|exists:motor_types,id',
+                'fuel_type_id' => 'required|exists:fuel_types,id',
+                'city_id' => 'required|exists:cities,id',
+                'address' => 'required|string',
+                'phone_number' => 'required|string|max:20',
+                'description' => 'required|string',
+            ]);
+
+            // Update motor details
+            $motor->update($validated);
+
+            // Handle new images if uploaded
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $imageFile) {
+                    $path = $imageFile->store('motors', 'public');
+                    $motor->images()->create([
+                        'path' => $path,
+                        'is_primary' => false
+                    ]);
+                }
+            }
+
+            // Handle existing images
+            if ($request->has('existing_images')) {
+                $motor->images()
+                    ->whereNotIn('id', $request->existing_images)
+                    ->delete();
+            }
+
+            DB::commit();
+
+            // Redirect to 'motorku' route with success message
+            return redirect()->route('motorku')
+                ->with('success', 'Motor berhasil diperbarui!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating motor: ' . $e->getMessage());
+            
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Gagal memperbarui motor. Silakan coba lagi.']);
+        }
     }
 
     /**
@@ -168,7 +234,29 @@ class MotorController extends Controller
      */
     public function destroy(Motor $motor)
     {
-        //
+        try {
+            // Check if user owns this motor
+            if ($motor->user_id !== Auth::id()) {
+                return redirect()->route('motorku')
+                    ->with('error', 'Unauthorized action.');
+            }
+
+            // Delete images first
+            foreach ($motor->images as $image) {
+                Storage::disk('public')->delete($image->path);
+                $image->delete();
+            }
+
+            // Delete the motor
+            $motor->delete();
+
+            return redirect()->route('motorku')
+                ->with('success', 'Motor berhasil dihapus');
+
+        } catch (\Exception $e) {
+            return redirect()->route('motorku')
+                ->with('error', 'Gagal menghapus motor: ' . $e->getMessage());
+        }
     }
 
     public function search(Request $request)
@@ -238,75 +326,70 @@ class MotorController extends Controller
 
     public function myList()
     {
-        // Get all motors belonging to the logged-in user
-        $motors = Motor::where('user_id', Auth::id())
-                      ->orderBy('created_at', 'desc')
-                      ->paginate(10);
+        $motors = Motor::with(['maker', 'motorModel', 'primaryImage'])
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->paginate(10);
 
         return view('motor.mylist', compact('motors'));
     }
 
     public function favorites()
     {
-        $favoriteMotors = auth()->user()->favoritedMotors()
+        $motors = Auth::user()->favouriteMotors()
             ->with(['maker', 'motorModel', 'primaryImage'])
-            ->latest()
+            ->latest('favourite_motor.created_at')
             ->paginate(12);
 
-        return view('motor.favorites', compact('favoriteMotors'));
+        return view('motor.favorites', compact('motors'));
     }
 
     public function watchlist()
     {
-        $motors = User::find(5)
-        ->favouriteMotors()
-        ->with(['primaryImage', 'city', 'motorType', 'fuelType', 'maker', 'motorModel'])
-        ->paginate(15);
+        $motors = Auth::user()->favouriteMotors()
+            ->with(['primaryImage', 'city', 'motorType', 'fuelType', 'maker', 'motorModel'])
+            ->latest('favourite_motor.created_at')
+            ->paginate(15);
+            
         return view('motor.watchlist', ['motors' => $motors]);
     }
 
- 
-
-public function getModels($makerId)
-{
-    $models = MotorModel::where('maker_id', $makerId)
-        ->orderBy('name')
-        ->get(['id', 'name']);
-    
-    return response()->json($models);
-}
-
-public function getModelsByMaker($makerId)
-{
-    try {
+    public function getModels($makerId)
+    {
         $models = MotorModel::where('maker_id', $makerId)
-                           ->orderBy('name')
-                           ->get(['id', 'name']);
+            ->orderBy('name')
+            ->get(['id', 'name']);
         
         return response()->json($models);
-    } catch (\Exception $e) {
-        Log::error('Error fetching models: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to load models'], 500);
-    }
-}
-
-public function toggleFavorite(Motor $motor)
-{
-    $user = auth()->user();
-    $favorite = MotorFavorite::where('user_id', $user->id)
-        ->where('motor_id', $motor->id)
-        ->first();
-
-    if ($favorite) {
-        $favorite->delete();
-    } else {
-        MotorFavorite::create([
-            'user_id' => $user->id,
-            'motor_id' => $motor->id
-        ]);
     }
 
-    return back();
-}
+    public function getModelsByMaker($makerId)
+    {
+        try {
+            $models = MotorModel::where('maker_id', $makerId)
+                               ->orderBy('name')
+                               ->get(['id', 'name']);
+            
+            return response()->json($models);
+        } catch (\Exception $e) {
+            Log::error('Error fetching models: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load models'], 500);
+        }
+    }
+
+    public function toggleFavorite(Motor $motor)
+    {
+        $user = Auth::user();
+        
+        if ($motor->isFavouritedBy($user)) {
+            $user->favouriteMotors()->detach($motor->id);
+            $message = 'Motor dihapus dari favorit';
+        } else {
+            $user->favouriteMotors()->attach($motor->id);
+            $message = 'Motor ditambahkan ke favorit';
+        }
+
+        return back()->with('success', $message);
+    }
 
 }

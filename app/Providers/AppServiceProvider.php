@@ -21,8 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Only keep basic pagination
-        Paginator::defaultView('pagination');
+        Paginator::useBootstrap();
         Blade::component('search-form', \App\View\Components\SearchForm::class);
     }
 }

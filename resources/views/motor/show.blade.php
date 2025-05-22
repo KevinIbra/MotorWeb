@@ -13,59 +13,38 @@
   
           <div class="car-details-content">
             <div class="car-images-and-description">
-              <div class="car-images-carousel">
+              <div class="car-images-carousel card">
                 <div class="car-image-wrapper">
-                  <img
-                    src="{{ $motor->primaryImage->image_path}}"
-                    alt=""
-                    class="car-active-image"
-                    id="activeImage"
-                  />
-                </div>
-                <div class="car-image-thumbnails">
-                 @foreach ($motor->images as $image)
-  <img 
-    src="{{ $image->image_path ?? asset('images/placeholder.jpg') }}" 
-    alt="" 
-    onclick="document.getElementById('activeImage').src='{{ $image->image_path }}'" 
-    class="cursor-pointer"
-  />
-@endforeach
-                    
-                 
-                 
-                </div>
-                <button class="carousel-button prev-button" id="prevButton">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    style="width: 64px"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M15.75 19.5 8.25 12l7.5-7.5"
+                    <img
+                        src="{{ Storage::url($motor->primaryImage?->path) ?? asset('images/placeholder.jpg') }}"
+                        alt="{{ $motor->maker?->name }} {{ $motor->motorModel?->name }}"
+                        class="car-active-image w-full h-[400px] object-cover"
+                        id="activeImage"
+                        onerror="this.src='{{ asset('images/placeholder.jpg') }}'"
                     />
-                  </svg>
+                </div>
+                <div class="car-image-thumbnails p-4 flex gap-2 overflow-x-auto">
+                    @foreach ($motor->images as $image)
+                        <img 
+                            src="{{ Storage::url($image->path) }}" 
+                            alt="{{ $motor->maker?->name }} {{ $motor->motorModel?->name }}" 
+                            onclick="document.getElementById('activeImage').src='{{ Storage::url($image->path) }}'" 
+                            class="cursor-pointer w-24 h-24 object-cover rounded-lg transition-all duration-200 {{ $motor->primaryImage?->id === $image->id ? 'ring-2 ring-primary' : 'hover:opacity-75' }}"
+                            onerror="this.src='{{ asset('images/placeholder.jpg') }}'"
+                        />
+                    @endforeach
+                </div>
+
+                {{-- Carousel Navigation Buttons --}}
+                <button class="carousel-button prev-button absolute left-4 top-1/2 -translate-y-1/2" id="prevButton">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                    </svg>
                 </button>
-                <button class="carousel-button next-button" id="nextButton">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    style="width: 64px"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="m8.25 4.5 7.5 7.5-7.5 7.5"
-                    />
-                  </svg>
+                <button class="carousel-button next-button absolute right-4 top-1/2 -translate-y-1/2" id="nextButton">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
                 </button>
               </div>
   
@@ -75,44 +54,45 @@
                   {!! $motor->description !!}
                
               </div>
-  {{-- tanda --}}
+  
               <div class="card car-detailed-description">
                 <h2 class="car-details-title">Spesifikasi Motor</h2>
   
                 <ul class="car-specifications">
-                 <x-motor-spesification :value="optional($motor->features)->abs">
-                    ABS
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="optional($motor->features)->keyless">
-                    Keyless
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="optional($motor->features)->alarm_system">
-                  Alarm System
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="optional($motor->features)->led_lights">
-                  LED Lights
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="optional($motor->features)->digital_speedometer">
-                 Digital Speedometer
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="optional($motor->features)->bluetooth_connectivity">
-                  Bluetooth Connectivity
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="optional($motor->features)->usb_charging">
-                 USB Charging
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="optional($motor->features)->engine_kill_switch">
-                  Engine Kill Switch
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="optional($motor->features)->side_stand_sensor">
-                  Side Stand Sensor
-                  </x-motor-spesification>
-                  <x-motor-spesification :value="optional($motor->features)->traction_control">
-                 Traction Control
-                  </x-motor-spesification>
-                  
-                
-               
+                    @if($motor->features)
+                        <x-motor-spesification :value="$motor->features->abs ?? false">
+                            ABS
+                        </x-motor-spesification>
+                        <x-motor-spesification :value="$motor->features->keyless ?? false">
+                            Keyless
+                        </x-motor-spesification>
+                        <x-motor-spesification :value="$motor->features->alarm_system ?? false">
+                            Alarm System
+                        </x-motor-spesification>
+                        <x-motor-spesification :value="$motor->features->led_lights ?? false">
+                            LED Lights
+                        </x-motor-spesification>
+                        <x-motor-spesification :value="$motor->features->digital_speedometer ?? false">
+                            Digital Speedometer
+                        </x-motor-spesification>
+                        <x-motor-spesification :value="$motor->features->bluetooth_connectivity ?? false">
+                            Bluetooth Connectivity
+                        </x-motor-spesification>
+                        <x-motor-spesification :value="$motor->features->usb_charging ?? false">
+                            USB Charging
+                        </x-motor-spesification>
+                        <x-motor-spesification :value="$motor->features->engine_kill_switch ?? false">
+                            Engine Kill Switch
+                        </x-motor-spesification>
+                        <x-motor-spesification :value="$motor->features->side_stand_sensor ?? false">
+                            Side Stand Sensor
+                        </x-motor-spesification>
+                        <x-motor-spesification :value="$motor->features->traction_control ?? false">
+                            Traction Control
+                        </x-motor-spesification>
+                    @else
+                        <p>No specifications available</p>
+                    @endif
                 </ul>
               </div>
             </div>
@@ -197,27 +177,58 @@
                     </div>
                 </div>
               </div>
-              <a href="tel:{{\Illuminate\Support\Str::mask($motor->phone, '*', -3)}}" class="car-details-phone">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  style="width: 16px"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"
-                  />
-                </svg>
-  
-                {{\Illuminate\Support\Str::mask($motor->phone, '*', -3)}}
-                <span class="car-details-phone-view">Liat Full Number</span>
-              </a>
+              <div class="phone-number-container">
+                  <a href="javascript:void(0)" class="car-details-phone" id="phoneNumberLink">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 16px">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                      </svg>
+                      <span id="phoneNumberText">
+                          @if($motor->phone)
+                              {{\Illuminate\Support\Str::mask($motor->phone, '*', -3)}}
+                          @else
+                              {{ $motor->owner?->phone ?? 'No phone number available' }}
+                          @endif
+                      </span>
+                      <span class="car-details-phone-view" id="viewNumberText">
+                          @if($motor->phone || $motor->owner?->phone)
+                              Liat Full Number
+                          @endif
+                      </span>
+                  </a>
+              </div>
             </div>
           </div>
         </div>
       </main>
+      @push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneLink = document.getElementById('phoneNumberLink');
+    const phoneText = document.getElementById('phoneNumberText');
+    const viewText = document.getElementById('viewNumberText');
+    const fullNumber = "{{ $motor->phone ?? $motor->owner?->phone ?? '' }}";
+    
+    if (!fullNumber) {
+        phoneLink.style.pointerEvents = 'none';
+        phoneLink.style.opacity = '0.7';
+        return;
+    }
+
+    let isRevealed = false;
+
+    phoneLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (!isRevealed) {
+            phoneText.textContent = fullNumber;
+            viewText.textContent = 'Sembunyikan Nomor';
+            isRevealed = true;
+        } else {
+            phoneText.textContent = "{{\Illuminate\Support\Str::mask($motor->phone ?? $motor->owner?->phone ?? '', '*', -3)}}";
+            viewText.textContent = 'Liat Full Number';
+            isRevealed = false;
+        }
+    });
+});
+</script>
+@endpush
 </x-app-layout>

@@ -1,13 +1,27 @@
 @props(['motor', 'isInWatchlist' => false])
 
 <div class="car-item card">
-    <a href="{{ route('motor.show', $motor->id) }}">
-      <img
-        src="{{ $motor->primaryImage->image_path}}"
-        alt=""
-        class="car-item-img rounded-t"
-      />
-    </a>
+    <div class="car-item-image">
+        <a href="{{ route('motor.show', $motor->id) }}">
+            <img
+                src="{{ Storage::url($motor->primaryImage?->path ?? 'img/placeholder.jpg') }}"
+                alt="{{ $motor->maker?->name }} {{ $motor->motorModel?->name }}"
+                class="car-item-img rounded-t w-full h-48 object-cover"
+                onerror="this.src='{{ asset('img/placeholder.jpg') }}'"
+            />
+        </a>
+        @auth
+            <button 
+                class="favorite-btn {{ $isInWatchlist ? 'active' : '' }}"
+                data-motor-id="{{ $motor->id }}"
+                onclick="toggleFavorite(this, {{ $motor->id }})"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                </svg>
+            </button>
+        @endauth
+    </div>
     <div class="p-medium">
       <div class="flex items-center justify-between">
         <small class="m-0 text-muted">{{ $motor->city?->name ?? 'Location N/A' }}</small>
@@ -51,3 +65,73 @@
       </p>
     </div>
 </div>
+
+
+@push('scripts')
+<script>
+async function toggleFavorite(button, motorId) {
+    try {
+        const response = await fetch(`/motor/${motorId}/favorite`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            button.classList.toggle('active');
+            
+            // Redirect to favorites page if adding to favorites
+            if (button.classList.contains('active')) {
+                window.location.href = '{{ route("motor.favorites") }}';
+            }
+        } else {
+            throw new Error('Failed to toggle favorite');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to update favorite status');
+    }
+}
+</script>
+@endpush
+
+@push('styles')
+<style>
+.favorite-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.favorite-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: #374151;
+    fill: transparent;
+    transition: all 0.2s;
+}
+
+.favorite-btn.active svg {
+    fill: #ef4444;
+    stroke: #ef4444;
+}
+
+.favorite-btn:hover {
+    transform: scale(1.1);
+}
+</style>
+@endpush

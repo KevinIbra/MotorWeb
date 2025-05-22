@@ -1,311 +1,220 @@
 <x-app-layout>
     <main>
         <div class="container-small">
-          <h1 class="car-details-page-title">Tambahkan Motor Baru</h1>
-          <form
-            action=""
-            method="POST"
-            enctype="multipart/form-data"
-            class="card add-new-car-form"
-          >
-            <div class="form-content">
-              <div class="form-details">
-                <div class="row">
-                  <div class="col">
-                    <div class="form-group">
-                      <label>Brand</label>
-                      <select>
-                        <option value="">Brand</option>
-                        <option value="bmw">Yamaha</option>
-                        <option value="lexus">Honda</option>
-                        <option value="mercedes">Suzuki</option>
-                        <option value="mercedes">Kawasaki</option>
-                      </select>
-                      <p class="error-message">Wajib Diisi</p>
+            <h1 class="car-details-page-title">Edit Motor</h1>
+
+            <form action="{{ route('motor.update', $motor) }}" method="POST" enctype="multipart/form-data" class="card add-new-car-form">
+                @csrf
+                @method('PUT')
+                
+                <div class="form-content">
+                    <div class="form-details">
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label>Merek</label>
+                                    <select name="maker_id" class="form-control" required>
+                                        <option value="">Pilih Merek</option>
+                                        @foreach($makers as $maker)
+                                            <option value="{{ $maker->id }}" {{ $motor->maker_id == $maker->id ? 'selected' : '' }}>
+                                                {{ $maker->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label>Model</label>
+                                    <select name="model_id" class="form-control" required>
+                                        <option value="">Pilih Model</option>
+                                        @foreach($models as $model)
+                                            <option value="{{ $model->id }}" {{ $motor->model_id == $model->id ? 'selected' : '' }}>
+                                                {{ $model->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label>Tahun</label>
+                                    <select name="year" class="form-control" required>
+                                        <option value="">Pilih Tahun</option>
+                                        @for($i = date('Y'); $i >= 1990; $i--)
+                                            <option value="{{ $i }}" {{ $motor->year == $i ? 'selected' : '' }}>
+                                                {{ $i }}
+                                            </option>
+                                        @endfor
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tipe Motor</label>
+                            <div class="row">
+                                @foreach($motorTypes as $type)
+                                    <div class="col">
+                                        <label class="inline-radio">
+                                            <input type="radio" name="motor_type_id" value="{{ $type->id }}" 
+                                                {{ $motor->motor_type_id == $type->id ? 'checked' : '' }} required/>
+                                            {{ $type->name }}
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label>Harga</label>
+                                    <input type="number" name="price" value="{{ $motor->price }}" class="form-control" required/>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label>VIN</label>
+                                    <input type="text" name="vin" value="{{ $motor->vin }}" class="form-control"/>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label>Kilometer</label>
+                                    <input type="number" name="mileage" value="{{ $motor->mileage }}" class="form-control" required/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Bahan Bakar</label>
+                            <div class="row">
+                                @foreach($fuelTypes as $type)
+                                    <div class="col">
+                                        <label class="inline-radio">
+                                            <input type="radio" name="fuel_type_id" value="{{ $type->id }}"
+                                                {{ $motor->fuel_type_id == $type->id ? 'checked' : '' }} required/>
+                                            {{ $type->name }}
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label>Kota</label>
+                                    <select name="city_id" class="form-control" required>
+                                        <option value="">Pilih Kota</option>
+                                        @foreach($cities as $city)
+                                            <option value="{{ $city->id }}" {{ $motor->city_id == $city->id ? 'selected' : '' }}>
+                                                {{ $city->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label>Alamat</label>
+                                    <input type="text" name="address" value="{{ $motor->address }}" class="form-control" required/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Deskripsi</label>
+                            <textarea name="description" rows="5" class="form-control" required>{{ $motor->description }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Nomor Telepon</label>
+                            <input type="text" name="phone_number" value="{{ $motor->phone_number }}" class="form-control" required/>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Foto Motor</label>
+                            <div class="existing-images flex gap-2 mb-4">
+                                @forelse($motor->images as $image)
+                                    <div class="relative">
+                                        <img 
+                                            src="{{ Storage::url($image->path) }}" 
+                                            class="w-24 h-24 object-cover rounded-lg shadow-sm" 
+                                            alt="{{ $motor->maker?->name }} {{ $motor->motorModel?->name }}"
+                                            onerror="this.src='{{ asset('images/placeholder.jpg') }}'"
+                                        />
+                                        <input type="hidden" name="existing_images[]" value="{{ $image->id }}"/>
+                                        <div class="absolute top-1 right-1">
+                                            <label class="inline-flex items-center">
+                                                <input 
+                                                    type="radio" 
+                                                    name="primary_image" 
+                                                    value="{{ $image->id }}"
+                                                    {{ $motor->primary_image_id == $image->id ? 'checked' : '' }}
+                                                    class="form-radio text-primary"
+                                                >
+                                                <span class="ml-1 text-xs text-white">Primary</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="text-gray-500">No images uploaded yet</p>
+                                @endforelse
+                            </div>
+
+                            <div class="mt-4">
+                                <input 
+                                    type="file" 
+                                    name="images[]" 
+                                    multiple 
+                                    class="form-control" 
+                                    accept="image/*"
+                                />
+                                <small class="text-muted block mt-2">
+                                    Upload foto baru jika ingin menambah atau mengganti foto yang ada.
+                                    Format yang didukung: JPG, JPEG, PNG. Maksimal 2MB per file.
+                                </small>
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                  <div class="col">
-                    <div class="form-group">
-                      <label>Model</label>
-                      <select>
-                        <option value="">Model</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col">
-                    <div class="form-group">
-                      <label>Tahun</label>
-                      <select>
-                        <option value="">Tahun</option>
-                        <option value="2024">2024</option>
-                        <option value="2023">2023</option>
-                        <option value="2022">2022</option>
-                        <option value="2021">2021</option>
-                        <option value="2020">2020</option>
-                        <option value="2019">2019</option>
-                        <option value="2018">2018</option>
-                        <option value="2017">2017</option>
-                        <option value="2016">2016</option>
-                        <option value="2015">2015</option>
-                        <option value="2014">2014</option>
-                        <option value="2013">2013</option>
-                        <option value="2012">2012</option>
-                        <option value="2011">2011</option>
-                        <option value="2010">2010</option>
-                        <option value="2009">2009</option>
-                        <option value="2008">2008</option>
-                        <option value="2007">2007</option>
-                        <option value="2006">2006</option>
-                        <option value="2005">2005</option>
-                        <option value="2004">2004</option>
-                        <option value="2003">2003</option>
-                        <option value="2002">2002</option>
-                        <option value="2001">2001</option>
-                        <option value="2000">2000</option>
-                        <option value="1999">1999</option>
-                        <option value="1998">1998</option>
-                        <option value="1997">1997</option>
-                        <option value="1996">1996</option>
-                        <option value="1995">1995</option>
-                        <option value="1994">1994</option>
-                        <option value="1993">1993</option>
-                        <option value="1992">1992</option>
-                        <option value="1991">1991</option>
-                        <option value="1990">1990</option>
-                      </select>
-                    </div>
-                  </div>
                 </div>
-                <div class="form-group">
-                  <label>Tipe Motor</label>
-                  <div class="row">
-                    <div class="col">
-                      <label class="inline-radio">
-                        <input type="radio" name="car_type" value="Sport" />
-                        Sport
-                      </label>
+
+                <div class="form-actions p-4">
+                    <div class="flex justify-end gap-2">
+                        <a href="{{ route('motor.index') }}" class="btn btn-default">Batal</a>
+                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                     </div>
-  
-                    <div class="col">
-                      <label class="inline-radio">
-                        <input type="radio" name="car_type" value="Matic" />
-                        Matic
-                      </label>
-                    </div>
-                    <div class="col">
-                      <label class="inline-radio">
-                        <input type="radio" name="car_type" value="Cruiser" />
-                        Cruiser
-                      </label>
-                    </div>
-  
-                    <div class="col">
-                      <label class="inline-radio">
-                        <input type="radio" name="car_type" value="trail" />
-                        Trail
-                      </label>
-                    </div>
-                  </div>
                 </div>
-                <div class="row">
-                  <div class="col">
-                    <div class="form-group">
-                      <label>Harga</label>
-                      <input type="number" placeholder="Harga" />
-                    </div>
-                  </div>
-                  <div class="col">
-                    <div class="form-group">
-                      <label>Vin Code</label>
-                      <input placeholder="Vin Code" />
-                    </div>
-                  </div>
-                  <div class="col">
-                    <div class="form-group">
-                      <label>Kilometer</label>
-                      <input placeholder="KM" />
-                    </div>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Tipe Bensin</label>
-                  <div class="row">
-                    <div class="col">
-                      <label class="inline-radio">
-                        <input type="radio" name="fuel_type" value="gasoline" />
-                        Pertalite
-                      </label>
-                    </div>
-                    <div class="col">
-                      <label class="inline-radio">
-                        <input type="radio" name="fuel_type" value="diesel" />
-                        Pertamax
-                      </label>
-                    </div>
-                    <div class="col">
-                      <label class="inline-radio">
-                        <input type="radio" name="fuel_type" value="electric" />
-                        Solar
-                      </label>
-                    </div>
-                  
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col">
-                    <div class="form-group">
-                      <label>Provinsi</label>
-                      <select>
-                        <option value="">Provinsi</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col">
-                    <div class="form-group">
-                      <label>Kota</label>
-                      <select>
-                        <option value="">Kota</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col">
-                    <div class="form-group">
-                      <label>Alamat</label>
-                      <input placeholder="Alamat" />
-                    </div>
-                  </div>
-                  <div class="col">
-                    <div class="form-group">
-                      <label>No HP</label>
-                      <input placeholder="Nomer" />
-                    </div>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <div class="row">
-                    <div class="col">
-                      <label class="checkbox">
-                        <input
-                          type="checkbox"
-                          name="air_conditioning"
-                          value="1"
-                        />
-                        Air Conditioning
-                      </label>
-  
-                      <label class="checkbox">
-                        <input type="checkbox" name="power_windows" value="1" />
-                        Power Windows
-                      </label>
-  
-                      <label class="checkbox">
-                        <input
-                          type="checkbox"
-                          name="power_door_locks"
-                          value="1"
-                        />
-                        Power Door Locks
-                      </label>
-  
-                      <label class="checkbox">
-                        <input type="checkbox" name="abs" value="1" />
-                        ABS
-                      </label>
-  
-                      <label class="checkbox">
-                        <input type="checkbox" name="cruise_control" value="1" />
-                        Cruise Control
-                      </label>
-  
-                      <label class="checkbox">
-                        <input
-                          type="checkbox"
-                          name="bluetooth_connectivity"
-                          value="1"
-                        />
-                        Bluetooth Connectivity
-                      </label>
-                    </div>
-                    <div class="col">
-                      <label class="checkbox">
-                        <input type="checkbox" name="remote_start" value="1" />
-                        Remote Start
-                      </label>
-  
-                      <label class="checkbox">
-                        <input type="checkbox" name="gps_navigation" value="1" />
-                        GPS Navigation System
-                      </label>
-  
-                      <label class="checkbox">
-                        <input type="checkbox" name="heated_seats" value="1" />
-                        Heated Seats
-                      </label>
-  
-                      <label class="checkbox">
-                        <input type="checkbox" name="climate_control" value="1" />
-                        Climate Control
-                      </label>
-  
-                      <label class="checkbox">
-                        <input
-                          type="checkbox"
-                          name="rear_parking_sensors"
-                          value="1"
-                        />
-                        Rear Parking Sensors
-                      </label>
-  
-                      <label class="checkbox">
-                        <input type="checkbox" name="leather_seats" value="1" />
-                        Leather Seats
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Deskripsi</label>
-                  <textarea rows="10"></textarea>
-                </div>
-                <div class="form-group">
-                  <label class="checkbox">
-                    <input type="checkbox" name="published" />
-                    Published
-                  </label>
-                </div>
-              </div>
-              <div class="form-images">
-                <div class="form-image-upload">
-                  <div class="upload-placeholder">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke-width="1.5"
-                      stroke="currentColor"
-                      style="width: 48px"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                      />
-                    </svg>
-                  </div>
-                  <input id="carFormImageUpload" type="file" multiple />
-                </div>
-                <div id="imagePreviews" class="car-form-images"></div>
-              </div>
-            </div>
-            <div class="p-medium" style="width: 100%">
-              <div class="flex justify-end gap-1">
-                <button type="button" class="btn btn-default">Reset</button>
-                <button class="btn btn-primary">Kirim</button>
-              </div>
-            </div>
-          </form>
+            </form>
         </div>
-      </main>
+    </main>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle maker change to load models
+            const makerSelect = document.querySelector('select[name="maker_id"]');
+            const modelSelect = document.querySelector('select[name="model_id"]');
+
+            makerSelect.addEventListener('change', async function() {
+                const makerId = this.value;
+                modelSelect.innerHTML = '<option value="">Pilih Model</option>';
+
+                if (makerId) {
+                    try {
+                        const response = await fetch(`/motors/maker/${makerId}/models`);
+                        const models = await response.json();
+                        models.forEach(model => {
+                            modelSelect.add(new Option(model.name, model.id));
+                        });
+                    } catch (error) {
+                        console.error('Error loading models:', error);
+                    }
+                }
+            });
+        });
+    </script>
+    @endpush
 </x-app-layout>

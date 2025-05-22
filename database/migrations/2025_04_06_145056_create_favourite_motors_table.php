@@ -11,11 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('motor_favorites', function (Blueprint $table) {
+        Schema::create('favourite_motor', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('motor_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('motor_id');
             $table->timestamps();
+            
+            // Add foreign key constraints
+            $table->foreign('user_id')
+                  ->references('id')
+                  ->on('users')
+                  ->onDelete('cascade');
+                  
+            $table->foreign('motor_id')
+                  ->references('id')
+                  ->on('motor')
+                  ->onDelete('cascade');
+                  
             $table->unique(['user_id', 'motor_id']);
         });
     }
@@ -25,6 +37,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('motor_favorites');
+        Schema::dropIfExists('favourite_motor');
     }
 };

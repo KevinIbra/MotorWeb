@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\MotorImage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class MotorImageFactory extends Factory
 {
+    protected $model = MotorImage::class;
+
     /**
      * Define the model's default state.
      *
@@ -17,8 +20,8 @@ class MotorImageFactory extends Factory
     public function definition(): array
     {
         return [
-            'image_path' => fake()->imageUrl(640, 480, 'motorcycle'),
-            'position' => fake()->numberBetween(1, 5)
+            'path' => $this->faker->imageUrl(640, 480, 'motorcycle'),
+            'is_primary' => false,
         ];
     }
 }

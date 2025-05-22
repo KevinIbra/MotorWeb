@@ -31,14 +31,14 @@
                     <div class="flex container">
                         <div class="slide-content">
                             <h2 class="hero-slider-title">
-                                Temukan <br />
-                                <strong>Motor Impianmu</strong>
+                                Speedzone <br />
+                                <strong>Kelola Motor</strong>
                             </h2>
                             <div class="hero-slider-content">
                                 <p>
-                                    Berbagai pilihan motor berkualitas menunggu Anda. <br />
+                                    <br />
                                 </p>
-                                <a href="{{ route('motor.index') }}" class="btn btn-hero-slider">Lihat Motor</a>
+                                <a href="{{ route('motor.mylist') }}" class="btn btn-hero-slider">Kelola Motor</a>
                             </div>
                         </div>
                         <div class="slide-image">

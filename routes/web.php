@@ -36,17 +36,21 @@ Route::get('/location/state/{state}/cities', [LocationController::class, 'getCit
 
 // Protected Motor Routes (only for logged-in users)
 Route::middleware(['auth'])->group(function () {
+    // Motor Management
+    Route::get('/motor/mylist', [MotorController::class, 'myList'])->name('motor.mylist');
+    Route::get('/motorku', [MotorController::class, 'myList'])->name('motorku');
+    Route::delete('/motor/{motor}', [MotorController::class, 'destroy'])->name('motor.destroy');
+    
+    // Other motor routes
     Route::get('/motor/create', [MotorController::class, 'create'])->name('motor.create');
-    Route::post('/motor/store', [MotorController::class, 'store'])->name('motor.store');
-    Route::resource('motor', MotorController::class);
-
-    Route::get('/motorku', [MotorController::class, 'myList'])->name('motor.mylist');
-    Route::get('/favorites', [MotorController::class, 'favorites'])->name('motor.favorites');
-    Route::get('/watchlist', [MotorController::class, 'watchlist'])->name('motor.watchlist');
-
+    Route::post('/motor', [MotorController::class, 'store'])->name('motor.store');
     Route::get('/motor/{motor}/edit', [MotorController::class, 'edit'])->name('motor.edit');
     Route::put('/motor/{motor}', [MotorController::class, 'update'])->name('motor.update');
-    Route::delete('/motor/{motor}', [MotorController::class, 'destroy'])->name('motor.destroy');
+
+    Route::resource('motor', MotorController::class);
+
+    Route::get('/favorites', [MotorController::class, 'favorites'])->name('motor.favorite');
+    Route::get('/watchlist', [MotorController::class, 'watchlist'])->name('motor.watchlist');
     
     // Motor routes
     Route::get('/motors/maker/{maker}/models', [MotorController::class, 'getModelsByMaker']);
@@ -65,6 +69,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [BuyerController::class, 'dashboard'])->name('buyer.dashboard');
         Route::get('/motors/saved', [MotorController::class, 'saved'])->name('motor.saved');
     });
+
+    Route::post('/motors/{motor}/favorite', [MotorController::class, 'toggleFavorite'])
+         ->name('motor.toggleFavorite');
+    Route::get('/favorites', [MotorController::class, 'favorites'])
+         ->name('motor.favorites');
 });
 
 // Route detail motor (must be last to avoid conflict)
@@ -74,7 +83,7 @@ Route::get('/motors/search', [MotorController::class, 'search'])->name('motor.se
 Route::get('/motors/maker/{maker}/models', [MotorController::class, 'getModels'])
     ->name('motor.models');
 
-    Route::middleware('auth')->group(function () {
-    Route::post('/motors/{motor}/favorite', [MotorController::class, 'toggleFavorite'])->name('motor.toggleFavorite');
+Route::middleware('auth')->group(function () {
+    Route::post('/motor/{motor}/favorite', [MotorController::class, 'toggleFavorite'])->name('motor.toggleFavorite');
     Route::get('/favorites', [MotorController::class, 'favorites'])->name('motor.favorites');
 });

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Motor extends Model
 {
@@ -28,21 +29,22 @@ class Motor extends Model
         'fuel_type_id',
         'city_id',
         'address',
-        'phone_number',  // Changed from 'phone' to 'phone_number'
+        'phone_number',
+        'phone',  // Add both variations to support legacy data
         'description',
-        'published_at'
+        'published_at',
+        'primary_image_id'
     ];
 
     protected $casts = [
         'published_at' => 'datetime', // Cast published_at as a datetime
+        'price' => 'decimal:0'
     ];
 
     public function motorType(): BelongsTo
     {
         return $this->belongsTo(MotorType::class);
     }
-
-   
 
     public function fuelType(): BelongsTo
     {
@@ -79,10 +81,24 @@ class Motor extends Model
         return $this->hasMany(MotorImage::class);
     }
 
-    public function primaryImage(): HasOne
+    public function primaryImage(): BelongsTo
     {
-        return $this->hasOne(MotorImage::class)
-            ->oldestOfMany('position');
+        return $this->belongsTo(MotorImage::class, 'primary_image_id');
+    }
+
+    // Add an accessor for image path with fallback
+    public function getImagePathAttribute()
+    {
+        return $this->primaryImage?->path ?? asset('img/placeholder.png');
+    }
+
+    // Add an accessor for image path with proper storage URL
+    public function getImageUrlAttribute(): string
+    {
+        if ($this->primaryImage) {
+            return Storage::url($this->primaryImage->path);
+        }
+        return asset('img/placeholder.jpg');
     }
 
     public function favouredUsers(): BelongsToMany
@@ -95,13 +111,48 @@ class Motor extends Model
         return $this->hasMany(MotorFavorite::class);
     }
 
-    public function isFavoritedBy(User $user)
+    public function isFavoritedBy(User $user): bool
     {
-        return $this->favorites()->where('user_id', $user->id)->exists();
+        return $this->favoritedBy()->where('user_id', $user->getKey())->exists();
+    }
+
+    public function favoritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'favourite_motor')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Get the users that have favorited this motor
+     */
+    public function favouritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'favourite_motor')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Check if the motor is favorited by a specific user
+     */
+    public function isFavouritedBy(User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        
+        return $this->favouritedBy()
+                    ->where('user_id', $user->id)
+                    ->exists();
     }
 
     public function getCreatedDate(): string
     {
         return (new Carbon($this->created_at))->format('d M Y');
+    }
+
+    // Add accessor to get phone number
+    public function getPhoneAttribute()
+    {
+        return $this->phone_number ?? $this->attributes['phone'] ?? null;
     }
 }
