@@ -155,4 +155,9 @@ class Motor extends Model
     {
         return $this->phone_number ?? $this->attributes['phone'] ?? null;
     }
+
+    public function offers()
+    {
+        return $this->hasMany(\App\Models\Offer::class, 'motor_id');
+    }
 }

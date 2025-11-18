@@ -13,3 +13,5 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+.header-right .user-menu { align-items: center; display: flex; gap: .5rem; }

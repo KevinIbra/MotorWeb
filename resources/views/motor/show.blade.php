@@ -55,46 +55,7 @@
                
               </div>
   
-              <div class="card car-detailed-description">
-                <h2 class="car-details-title">Spesifikasi Motor</h2>
-  
-                <ul class="car-specifications">
-                    @if($motor->features)
-                        <x-motor-spesification :value="$motor->features->abs ?? false">
-                            ABS
-                        </x-motor-spesification>
-                        <x-motor-spesification :value="$motor->features->keyless ?? false">
-                            Keyless
-                        </x-motor-spesification>
-                        <x-motor-spesification :value="$motor->features->alarm_system ?? false">
-                            Alarm System
-                        </x-motor-spesification>
-                        <x-motor-spesification :value="$motor->features->led_lights ?? false">
-                            LED Lights
-                        </x-motor-spesification>
-                        <x-motor-spesification :value="$motor->features->digital_speedometer ?? false">
-                            Digital Speedometer
-                        </x-motor-spesification>
-                        <x-motor-spesification :value="$motor->features->bluetooth_connectivity ?? false">
-                            Bluetooth Connectivity
-                        </x-motor-spesification>
-                        <x-motor-spesification :value="$motor->features->usb_charging ?? false">
-                            USB Charging
-                        </x-motor-spesification>
-                        <x-motor-spesification :value="$motor->features->engine_kill_switch ?? false">
-                            Engine Kill Switch
-                        </x-motor-spesification>
-                        <x-motor-spesification :value="$motor->features->side_stand_sensor ?? false">
-                            Side Stand Sensor
-                        </x-motor-spesification>
-                        <x-motor-spesification :value="$motor->features->traction_control ?? false">
-                            Traction Control
-                        </x-motor-spesification>
-                    @else
-                        <p>No specifications available</p>
-                    @endif
-                </ul>
-              </div>
+             
             </div>
             <div class="car-details card">
               <div class="flex items-center justify-between">
@@ -232,3 +193,97 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 @endpush
 </x-app-layout>
+
+{{-- Tampilkan notifikasi penawaran terkait motor ini --}}
+@auth
+    @if(isset($notifications) && $notifications->isNotEmpty())
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="text-lg font-semibold">Notifikasi Penawaran Anda untuk Motor Ini</h3>
+            </div>
+            <div class="card-body">
+                @foreach($notifications as $n)
+                    @php $d = $n->data; @endphp
+                    <div class="p-3 mb-2 border rounded {{ $n->read_at ? 'bg-white' : 'bg-yellow-50' }}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-medium">{{ $d['motor_title'] ?? 'Penawaran' }}</div>
+                                <div class="text-sm text-gray-600">
+                                    Status: <strong>{{ ucfirst($d['status'] ?? '-') }}</strong>
+                                    &nbsp;•&nbsp; Rp {{ number_format($d['amount'] ?? 0,0,',','.') }}
+                                </div>
+                                @if(!empty($d['message']))
+                                    <div class="text-sm text-gray-500 mt-1">{{ \Illuminate\Support\Str::limit($d['message'], 160) }}</div>
+                                @endif
+                            </div>
+
+                            <div class="text-xs text-gray-400 text-right">
+                                {{ $n->created_at->format('d/m/Y H:i') }}
+                                <div class="mt-1">{{ $n->created_at->diffForHumans() }}</div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+@endauth
+
+{{-- Jika pembeli melihat, tampilkan form penawaran harga --}}
+
+@auth
+    @if($motor->user_id !== auth()->id())
+    <div class="card mt-4">
+        <h3 class="mb-2">Tawar Harga</h3>
+        <form action="{{ route('offers.store', $motor) }}" method="POST">
+            @csrf
+            <div class="grid gap-2">
+                <input type="number" name="amount" step="0.01" min="0" placeholder="Masukkan penawaran (Rp)" class="form-control" required>
+                <textarea name="message" rows="2" class="form-control" placeholder="Pesan singkat (opsional)"></textarea>
+                <button type="submit" class="btn btn-primary">Kirim Penawaran</button>
+            </div>
+        </form>
+    </div>
+    @endif
+@endauth
+
+{{-- Jika penjual melihat, tampilkan ringkasan penawaran terkait motor ini --}}
+@auth
+    @if($motor->user_id === auth()->id())
+    <div class="card mt-4">
+        <h3 class="mb-2">Penawaran Masuk</h3>
+        @foreach($motor->offers()->with('buyer')->latest()->take(5)->get() as $of)
+            <div class="offer-row p-2 border-b">
+                <div><strong>{{ $of->buyer->name }}</strong> - Rp {{ number_format($of->amount,0,',','.') }}</div>
+                <div class="text-sm text-muted">{{ $of->message }}</div>
+                <div class="mt-2 flex gap-2">
+                    <form action="{{ route('offers.update.status', $of) }}" method="POST">
+                        @csrf @method('PATCH')
+                        <input type="hidden" name="status" value="accepted">
+                        <button class="btn-accept btn-sm" type="submit">Terima</button>
+                    </form>
+
+                    <form action="{{ route('offers.update.status', $of) }}" method="POST">
+                        @csrf @method('PATCH')
+                        <input type="hidden" name="status" value="rejected">
+                        <button class="btn-reject btn-sm" type="submit">Tolak</button>
+                    </form>
+
+                    <span class="ml-auto">{{ ucfirst($of->status) }}</span>
+                </div>
+            </div>
+        @endforeach
+    </div>
+    @endif
+@endauth
+
+{{-- add small local styles for the accept/reject buttons --}}
+@push('styles')
+<style>
+    .btn-sm { font-size: .75rem; padding: .25rem .5rem; border-radius: .375rem; border: none; cursor: pointer; }
+    .btn-accept { background-color: #2563EB; color: #fff; } /* blue */
+    .btn-accept:hover { background-color: #1E40AF; }
+    .btn-reject { background-color: #F97316; color: #fff; } /* orange */
+    .btn-reject:hover { background-color: #C2410B; }
+</style>
+@endpush

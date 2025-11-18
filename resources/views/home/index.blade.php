@@ -71,6 +71,66 @@
         @endif
     </main>
 
+    @auth
+    <div class="container flex justify-end items-center gap-3 py-3">
+        <div class="flex items-center gap-3">
+            {{-- NOTIF ICON --}}
+            <div class="relative">
+                <button id="notif-toggle" class="flex items-center gap-2 text-sm bg-transparent border-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1" />
+                    </svg>
+                    @php $unreadCount = auth()->user()->unreadNotifications->count(); @endphp
+                    @if($unreadCount > 0)
+                        <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium bg-red-600 text-white rounded-full">
+                            {{ $unreadCount }}
+                        </span>
+                    @endif
+                </button>
+
+                <div id="notif-dropdown" class="absolute right-0 mt-2 w-80 bg-white border rounded shadow-lg hidden z-50">
+                    <div class="p-3 border-b flex items-center justify-between">
+                        <div class="font-medium text-sm">Notifikasi</div>
+                        <a href="{{ route('notifications.index') }}" class="text-sm text-blue-600">Lihat Semua</a>
+                    </div>
+
+                    <div class="max-h-64 overflow-y-auto">
+                        @forelse(auth()->user()->notifications()->latest()->take(5)->get() as $n)
+                            @php $data = $n->data; @endphp
+                            <a href="{{ $data['url'] ?? '#' }}" class="block p-3 hover:bg-gray-50 {{ $n->read_at ? 'opacity-80' : '' }}">
+                                <div class="text-sm font-medium">{{ $data['motor_title'] ?? 'Penawaran' }}</div>
+                                <div class="text-xs text-gray-600">{{ ucfirst($data['status'] ?? '') }} — Rp {{ number_format($data['amount'] ?? 0,0,',','.') }}</div>
+                                @if(!empty($data['message']))
+                                    <div class="text-xs text-gray-500 mt-1">{{ \Illuminate\Support\Str::limit($data['message'], 80) }}</div>
+                                @endif
+                            </a>
+                        @empty
+                            <div class="p-3 text-sm text-gray-600">Belum ada notifikasi</div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            {{-- NAMA PENGGUNA --}}
+            <div class="text-sm font-medium">{{ auth()->user()->name }}</div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('click', function(e){
+        const toggle = document.getElementById('notif-toggle');
+        const dropdown = document.getElementById('notif-dropdown');
+        if (!toggle || !dropdown) return;
+        if (toggle.contains(e.target)) {
+            dropdown.classList.toggle('hidden');
+        } else if (!dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+    </script>
+    @endauth
+
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {

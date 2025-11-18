@@ -7,7 +7,11 @@ use App\Http\Controllers\MotorController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BuyerController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OfferController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
 
 // Home Route
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -74,6 +78,24 @@ Route::middleware(['auth'])->group(function () {
          ->name('motor.toggleFavorite');
     Route::get('/favorites', [MotorController::class, 'favorites'])
          ->name('motor.favorites');
+
+    // Order routes
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::post('/motors/{motor}/order', [OrderController::class, 'store'])->name('orders.store');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
+
+    // Offer routes
+    Route::middleware(['auth'])->group(function () {
+        Route::post('/motors/{motor}/offers', [OfferController::class, 'store'])->name('offers.store');
+        Route::get('/seller/offers', [OfferController::class, 'sellerIndex'])->name('offers.seller.index');
+        Route::patch('/offers/{offer}/status', [OfferController::class, 'updateStatus'])->name('offers.update.status');
+    });
+
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/mark-all', [NotificationController::class, 'markAllRead'])->name('notifications.markAll');
+    });
 });
 
 // Route detail motor (must be last to avoid conflict)
@@ -86,4 +108,9 @@ Route::get('/motors/maker/{maker}/models', [MotorController::class, 'getModels']
 Route::middleware('auth')->group(function () {
     Route::post('/motor/{motor}/favorite', [MotorController::class, 'toggleFavorite'])->name('motor.toggleFavorite');
     Route::get('/favorites', [MotorController::class, 'favorites'])->name('motor.favorites');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });

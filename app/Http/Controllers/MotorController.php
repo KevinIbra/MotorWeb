@@ -130,7 +130,7 @@ class MotorController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request, Motor $motor)
+    public function show(\App\Models\Motor $motor)
     {
         $motor->load([
             'maker', 
@@ -143,7 +143,24 @@ class MotorController extends Controller
             'features'
         ]);
         
-        return view('motor.show', ['motor' => $motor]);
+        $notifications = collect();
+        if (auth()->check()) {
+            $user = auth()->user();
+
+            // tandai unread notifikasi untuk motor ini sebagai terbaca
+            $user->unreadNotifications()
+                ->where('data->motor_id', $motor->id)
+                ->get()
+                ->markAsRead();
+
+            // ambil semua notifikasi (read & unread) yang terkait motor ini untuk user
+            $notifications = $user->notifications()
+                ->where('data->motor_id', $motor->id)
+                ->latest()
+                ->get();
+        }
+
+        return view('motor.show', compact('motor', 'notifications'));
     }
 
     /*
